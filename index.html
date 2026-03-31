@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CRRT Na⁺">
+<meta name="theme-color" content="#0a0f1a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>CRRT Sodium Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0f1a;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --card-border: rgba(255,255,255,0.08);
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.15);
+    --accent-soft: rgba(59,130,246,0.1);
+    --text: #f0f2f5;
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-muted: rgba(255,255,255,0.35);
+    --input-bg: rgba(255,255,255,0.06);
+    --input-border: rgba(255,255,255,0.1);
+    --input-focus: rgba(59,130,246,0.4);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.1);
+    --red-border: rgba(248,113,113,0.25);
+    --green: #34d399;
+    --green-bg: rgba(52,211,153,0.1);
+    --green-border: rgba(52,211,153,0.25);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251,191,36,0.1);
+    --amber-border: rgba(251,191,36,0.25);
+    --blue-bg: rgba(59,130,246,0.1);
+    --blue-border: rgba(59,130,246,0.25);
+    --radius: 16px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    padding-top: var(--safe-top);
+    padding-bottom: calc(76px + var(--safe-bottom));
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 24px 20px 20px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: #ffffff;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 16px 16px 24px; max-width: 500px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 14px;
+    border: 1px solid var(--card-border);
+    transition: border-color 0.2s;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .card-title .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* ── Form elements ── */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 7px;
+    letter-spacing: 0.2px;
+  }
+  .field label .unit {
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    background: var(--input-bg);
+    color: var(--text);
+    transition: all 0.2s;
+    -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    background: rgba(59,130,246,0.06);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
+  }
+  .field input::placeholder { color: var(--text-muted); }
+
+  .row { display: flex; gap: 12px; }
+  .row .field { flex: 1; }
+
+  /* ── Segment control ── */
+  .segment {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    border: 1px solid var(--card-border);
+  }
+  .segment button {
+    flex: 1;
+    padding: 10px 4px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .segment button.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(59,130,246,0.35);
+  }
+
+  /* ── Results ── */
+  .result-box {
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 14px;
+    border: 1px solid;
+  }
+  .result-box.neutral { background: var(--blue-bg); border-color: var(--blue-border); }
+  .result-box.danger { background: var(--red-bg); border-color: var(--red-border); }
+  .result-box.success { background: var(--green-bg); border-color: var(--green-border); }
+  .result-box.warning { background: var(--amber-bg); border-color: var(--amber-border); }
+  .result-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+  .result-value {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  .result-value .unit-small {
+    font-size: 15px;
+    font-weight: 500;
+    opacity: 0.6;
+  }
+  .result-note {
+    font-size: 13px;
+    margin-top: 8px;
+    line-height: 1.5;
+    opacity: 0.85;
+  }
+
+  /* ── Math ── */
+  .math-block {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 10px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+  .math-block .highlight {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── Button ── */
+  .calc-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+    letter-spacing: 0.2px;
+  }
+  .calc-btn:active {
+    transform: scale(0.985);
+    box-shadow: 0 2px 10px rgba(59,130,246,0.2);
+  }
+
+  /* ── Info page ── */
+  .info-section { margin-bottom: 12px; }
+  .info-section p, .info-section li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .info-section ul { padding-left: 18px; margin-top: 6px; }
+  .info-section li { margin-bottom: 6px; }
+
+  .formula-display {
+    background: rgba(59,130,246,0.06);
+    border: 1px solid var(--blue-border);
+    border-radius: 12px;
+    padding: 18px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    margin: 12px 0;
+    overflow-x: auto;
+    color: var(--text-secondary);
+  }
+  .formula-display .var { color: var(--accent); font-weight: 600; }
+  .formula-display .eq { color: var(--amber); }
+
+  .ref-list { font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
+  .ref-list p { margin-bottom: 8px; }
+  .pmid { color: var(--accent); font-weight: 600; }
+  .ref-annotation { color: var(--accent); font-style: italic; font-size: 11px; }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,15,26,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    padding-bottom: var(--safe-bottom);
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    gap: 3px;
+    transition: color 0.2s;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ── Animations ── */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .result-box { animation: fadeIn 0.35s ease; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .page.active .card { animation: slideUp 0.3s ease both; }
+  .page.active .card:nth-child(2) { animation-delay: 0.05s; }
+  .page.active .card:nth-child(3) { animation-delay: 0.1s; }
+  .page.active .card:nth-child(4) { animation-delay: 0.15s; }
+
+  /* ── Light mode ── */
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f8f9fc;
+      --surface: #ffffff;
+      --surface-hover: #f1f3f9;
+      --card-border: rgba(0,0,0,0.06);
+      --text: #111827;
+      --text-secondary: rgba(0,0,0,0.5);
+      --text-muted: rgba(0,0,0,0.3);
+      --input-bg: #f3f4f8;
+      --input-border: rgba(0,0,0,0.08);
+      --input-focus: rgba(59,130,246,0.5);
+      --blue-bg: #eff6ff;
+      --blue-border: #bfdbfe;
+      --red-bg: #fef2f2;
+      --red-border: #fecaca;
+      --green-bg: #ecfdf5;
+      --green-border: #a7f3d0;
+      --amber-bg: #fffbeb;
+      --amber-border: #fde68a;
+    }
+    .header { background: linear-gradient(180deg, #eff6ff 0%, transparent 100%); }
+    .segment { background: #f1f3f8; border-color: rgba(0,0,0,0.06); }
+    .segment button.active { box-shadow: 0 2px 8px rgba(59,130,246,0.25); }
+    .math-block { background: #f8f9fc; }
+    .formula-display { background: #f0f7ff; }
+    .bottom-nav { background: rgba(248,249,252,0.88); }
+    .field input:focus { background: #fff; }
+    .calc-btn { box-shadow: 0 4px 16px rgba(59,130,246,0.25); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CRRT Sodium Calculator</h1>
+  <p>Sodium management during continuous renal replacement therapy</p>
+</div>
+
+<!-- ===== PAGE: CALCULATOR ===== -->
+<div class="page active" id="page-calc">
+
+  <!-- Scenario selector -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--accent-soft);color:var(--accent);">Na</div>
+      Clinical Scenario
+    </div>
+    <div class="segment" id="scenario-seg">
+      <button class="active" onclick="setScenario('hyper')">Hypernatremia</button>
+      <button onclick="setScenario('hypo')">Hyponatremia</button>
+      <button onclick="setScenario('circuit')">Circuit Na⁺</button>
+    </div>
+  </div>
+
+  <!-- CRRT Prescription -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--green-bg);color:var(--green);">⚙</div>
+      CRRT Prescription
+    </div>
+    <div class="field">
+      <label>Anticoagulation</label>
+      <div class="segment" id="anticoag-seg">
+        <button class="active" onclick="setAnticoag('acda')">ACD-A</button>
+        <button onclick="setAnticoag('tsc')">4% TSC</button>
+        <button onclick="setAnticoag('none')">None / Heparin</button>
+      </div>
+    </div>
+    <div class="row" id="citrate-row">
+      <div class="field">
+        <label>Citrate rate <span class="unit">mL/hr</span></label>
+        <input type="number" id="citrateRate" placeholder="200" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Citrate [Na⁺] <span class="unit">mEq/L</span></label>
+        <input type="number" id="citrateNa" value="224" inputmode="decimal">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Replacement fluid <span class="unit">mL/hr</span></label>
+        <input type="number" id="rfRate" placeholder="1000" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>RF [Na⁺] <span class="unit">mEq/L</span></label>
+        <input type="number" id="rfNa" value="140" inputmode="decimal">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Dialysate <span class="unit">mL/hr</span></label>
+        <input type="number" id="dialRate" placeholder="1000" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Dialysate [Na⁺] <span class="unit">mEq/L</span></label>
+        <input type="number" id="dialNa" value="140" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- Target -->
+  <div class="card" id="target-card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--amber-bg);color:var(--amber);">⎯</div>
+      <span id="target-title">Target Sodium</span>
+    </div>
+    <div class="field">
+      <label id="target-label">Target serum Na⁺ <span class="unit">mEq/L</span></label>
+      <input type="number" id="targetNa" placeholder="155" inputmode="decimal">
+    </div>
+    <div class="field" id="current-na-field" style="display:none;">
+      <label>Current serum Na⁺ <span class="unit">mEq/L</span></label>
+      <input type="number" id="currentNa" placeholder="110" inputmode="decimal">
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">Calculate</button>
+
+  <div id="results"></div>
+
+  <!-- Footer -->
+  <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--card-border);">
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.9; padding:0 2px;">
+      <div style="font-size:11px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">Sources</div>
+      Hypernatremia: Yessayan et al. <em>Semin Dial</em> 2021; Tinawi <em>Semin Dial</em> 2021 &middot;
+      Hyponatremia: Rosner &amp; Connor <em>CJASN</em> 2018 &middot;
+      Validation: F&uuml;l&ouml;p et al. <em>Blood Purif</em> 2019 &middot;
+      Sieving: Zadek et al. <em>Crit Care</em> 2025; Chadha et al. <em>Pediatr Nephrol</em> 2002
+    </div>
+    <div style="margin-top:16px; padding:14px 16px; background:var(--surface); border:1px solid var(--card-border); border-radius:12px; font-size:11px; color:var(--text-muted); line-height:1.6; text-align:center;">
+      For educational purposes only. Not a substitute for clinical judgment.<br>
+      Verify all calculations independently.
+    </div>
+    <div style="text-align:center; margin-top:14px; padding-bottom:8px;">
+      <span style="font-size:10px; color:var(--text-muted); letter-spacing:0.3px;">v1.0 &middot; Supplementary material</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: FORMULAS ===== -->
+<div class="page" id="page-formulas">
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--accent-soft);color:var(--accent);">Σ</div>
+      Effective Circuit Sodium
+    </div>
+    <div class="info-section">
+      <p>The weighted average sodium of all fluids entering the CRRT circuit determines the equilibration point.</p>
+      <div class="formula-display">
+        <span class="var">Circuit Na⁺</span> <span class="eq">=</span> Σ(flow × [Na⁺]) / Σ(flows)
+      </div>
+      <p>Includes replacement fluid, dialysate, and citrate anticoagulant (if used). The patient's serum sodium will drift toward this value at steady state.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--red-bg);color:var(--red);">↑</div>
+      Therapeutic Hypernatremia
+    </div>
+    <div class="info-section">
+      <p>When Target Na⁺ exceeds the circuit Na⁺, hypertonic saline (3% NaCl, 513 mEq/L) is required to maintain the target.</p>
+      <div class="formula-display">
+        <span class="var">3% NaCl rate</span> <span class="eq">=</span> Total flow × (<span class="var">Target Na</span> − <span class="var">Circuit Na</span>) / (513 − <span class="var">Target Na</span>)
+      </div>
+      <p>Derived from mass balance: at steady state, sodium input equals sodium output. Solving for the HTS flow rate yields this formula.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--green-bg);color:var(--green);">↓</div>
+      Severe Hyponatremia
+    </div>
+    <div class="info-section">
+      <p>When the circuit Na⁺ exceeds the Target Na⁺, D5W (0 mEq/L Na⁺) dilutes the circuit sodium to slow correction and prevent osmotic demyelination.</p>
+      <div class="formula-display">
+        <span class="var">D5W rate</span> <span class="eq">=</span> Total flow × (<span class="var">Circuit Na</span> − <span class="var">Target Na</span>) / <span class="var">Target Na</span>
+      </div>
+      <p>Same mass balance derivation, solving for D5W volume needed to achieve the target equilibration sodium.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:rgba(139,92,246,0.1);color:#a78bfa;">⚠</div>
+      Assumptions &amp; Limitations
+    </div>
+    <div class="info-section">
+      <ul>
+        <li>Sodium sieving coefficient = 1.0</li>
+        <li>Gibbs-Donnan effect may reduce actual clearance by 2–5% in hypoalbuminemic patients</li>
+        <li>Steady-state model — does not account for transient dynamics</li>
+        <li>Patient fluid intake, UF, and other IV infusions not included</li>
+        <li>Frequent serum Na⁺ monitoring is essential</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: REFERENCES ===== -->
+<div class="page" id="page-refs">
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--green-bg);color:var(--green);">📖</div>
+      References
+    </div>
+
+    <div class="section-label">Primary Formula Sources</div>
+    <div class="ref-list">
+      <p><strong>Yessayan L, Yee J, Frinak S, Szamosfalvi B.</strong> Continuous renal replacement therapy for the management of acid-base and electrolyte imbalances in acute kidney injury. <em>Semin Dial.</em> 2021;34(5):372-383. <span class="pmid">PMID 34218456</span><br>
+      <span class="ref-annotation">→ Source: 3% NaCl rate formula for therapeutic hypernatremia</span></p>
+
+      <p><strong>Rosner MH, Connor MJ Jr.</strong> Management of severe hyponatremia with continuous renal replacement therapies. <em>Clin J Am Soc Nephrol.</em> 2018;13(5):787-789. <span class="pmid">PMID 29463598</span><br>
+      <span class="ref-annotation">→ Source: D5W rate formula; worked example with ACD-A citrate</span></p>
+
+      <p><strong>Tinawi M.</strong> Management of hypernatremia and hyponatremia during continuous renal replacement therapy. <em>Semin Dial.</em> 2021;34(6):499-508. <span class="pmid">PMID 33063373</span><br>
+      <span class="ref-annotation">→ Independent derivation confirming mass balance approach</span></p>
+    </div>
+
+    <div class="section-label">Clinical Validation</div>
+    <div class="ref-list">
+      <p><strong>Fülöp T, Zsom L, Rodríguez RD, et al.</strong> Therapeutic hypernatremia management during continuous renal replacement therapy. <em>Blood Purif.</em> 2019;47(1-3):257-265. <span class="pmid">PMID 30848433</span><br>
+      <span class="ref-annotation">→ Case series: 80–100 mL/hr 3% NaCl rates confirmed empirically</span></p>
+
+      <p><strong>Yessayan L, Yee J, Frinak S, Szamosfalvi B.</strong> Treatment of severe hyponatremia in patients with kidney failure. <em>Am J Kidney Dis.</em> 2014;64(2):305-310. <span class="pmid">PMID 24364893</span><br>
+      <span class="ref-annotation">→ Low-sodium replacement fluid approach</span></p>
+    </div>
+
+    <div class="section-label">Sieving Coefficient &amp; Citrate Data</div>
+    <div class="ref-list">
+      <p><strong>Zadek F, Gattin E, Galli A, et al.</strong> Sodium sieving coefficient and Gibbs-Donnan effect during CRRT. <em>Crit Care.</em> 2025;29:82. <span class="pmid">PMID 40059273</span><br>
+      <span class="ref-annotation">→ Na SC slightly &lt;1.0 with albumin; 2–5% conservative bias</span></p>
+
+      <p><strong>Chadha V, Garg U, Warady BA, Alon US.</strong> Citrate clearance in children receiving CVVHD. <em>Pediatr Nephrol.</em> 2002;17:819-824. <span class="pmid">PMID 12376810</span><br>
+      <span class="ref-annotation">→ Citrate SC ≈ 1.0; supports inclusion of citrate Na in calculations</span></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <div class="icon" style="background:var(--accent-soft);color:var(--accent);">ℹ</div>
+      About
+    </div>
+    <div class="info-section">
+      <p>Supplementary tool for: <strong style="color:var(--text);">Management of AKI in Acute Brain Injury</strong></p>
+      <p style="margin-top:8px; font-size:11px; color:var(--text-muted);">Version 1.0 · For educational use only · Based on published mass balance principles</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Bottom Navigation ── -->
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="showPage('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
+    Calculator
+  </button>
+  <button class="nav-item" onclick="showPage('formulas')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h6M4 17h6M14 4l-4 16M18 4l-4 16"/></svg>
+    Formulas
+  </button>
+  <button class="nav-item" onclick="showPage('refs')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    References
+  </button>
+</div>
+
+<script>
+let scenario = 'hyper';
+let anticoag = 'acda';
+
+function setScenario(s) {
+  scenario = s;
+  document.querySelectorAll('#scenario-seg button').forEach((b, i) => {
+    b.classList.toggle('active', (s === 'hyper' && i === 0) || (s === 'hypo' && i === 1) || (s === 'circuit' && i === 2));
+  });
+  const targetCard = document.getElementById('target-card');
+  const currentField = document.getElementById('current-na-field');
+  const targetInput = document.getElementById('targetNa');
+  if (s === 'hyper') {
+    targetCard.style.display = 'block';
+    currentField.style.display = 'none';
+    targetInput.placeholder = '155';
+  } else if (s === 'hypo') {
+    targetCard.style.display = 'block';
+    currentField.style.display = 'block';
+    targetInput.placeholder = '118';
+  } else {
+    targetCard.style.display = 'none';
+    currentField.style.display = 'none';
+  }
+  document.getElementById('results').innerHTML = '';
+}
+
+function setAnticoag(a) {
+  anticoag = a;
+  document.querySelectorAll('#anticoag-seg button').forEach((b, i) => {
+    b.classList.toggle('active', (a === 'acda' && i === 0) || (a === 'tsc' && i === 1) || (a === 'none' && i === 2));
+  });
+  const citrateRow = document.getElementById('citrate-row');
+  const citrateNaInput = document.getElementById('citrateNa');
+  if (a === 'acda') { citrateRow.style.display = 'flex'; citrateNaInput.value = '224'; }
+  else if (a === 'tsc') { citrateRow.style.display = 'flex'; citrateNaInput.value = '420'; }
+  else { citrateRow.style.display = 'none'; }
+}
+
+function getVal(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
+
+function calculate() {
+  const rfRate = getVal('rfRate'), rfNa = getVal('rfNa');
+  const dialRate = getVal('dialRate'), dialNa = getVal('dialNa');
+  const citrateRate = anticoag !== 'none' ? getVal('citrateRate') : 0;
+  const citrateNa = anticoag !== 'none' ? getVal('citrateNa') : 0;
+  const totalFlow = rfRate + dialRate + citrateRate;
+  if (totalFlow === 0) { showError('Enter at least one fluid flow rate.'); return; }
+  const totalNa = (rfRate * rfNa) + (dialRate * dialNa) + (citrateRate * citrateNa);
+  const circuitNa = totalNa / totalFlow;
+  let html = '';
+  html += `<div class="result-box neutral"><div class="result-label" style="color:var(--accent);">Effective Circuit Na⁺</div><div class="result-value" style="color:var(--accent);">${circuitNa.toFixed(1)} <span class="unit-small">mEq/L</span></div><div class="result-note" style="color:var(--text-secondary);">Patient sodium will drift toward this value at steady state</div></div>`;
+  let mathLines = [];
+  if (rfRate > 0) mathLines.push(`RF: ${rfRate} × ${rfNa} = ${(rfRate * rfNa).toLocaleString()}`);
+  if (dialRate > 0) mathLines.push(`Dial: ${dialRate} × ${dialNa} = ${(dialRate * dialNa).toLocaleString()}`);
+  if (citrateRate > 0) mathLines.push(`Citrate: ${citrateRate} × ${citrateNa} = ${(citrateRate * citrateNa).toLocaleString()}`);
+  mathLines.push(`─────────────────────`);
+  mathLines.push(`Total: ${totalNa.toLocaleString()} / ${totalFlow} = <span class="highlight">${circuitNa.toFixed(1)} mEq/L</span>`);
+  html += `<div class="math-block">${mathLines.join('<br>')}</div>`;
+
+  if (scenario === 'hyper') {
+    const targetNa = getVal('targetNa');
+    if (targetNa === 0) { showError('Enter a target sodium.'); return; }
+    if (targetNa >= 513) { showError('Target Na must be less than 513 mEq/L.'); return; }
+    if (targetNa > circuitNa) {
+      const htsRate = totalFlow * (targetNa - circuitNa) / (513 - targetNa);
+      html += `<div class="result-box danger"><div class="result-label" style="color:var(--red);">3% NaCl (513 mEq/L) Required</div><div class="result-value" style="color:var(--red);">${htsRate.toFixed(1)} <span class="unit-small">mL/hr</span></div><div class="result-note" style="color:var(--text-secondary);">To maintain target Na⁺ of ${targetNa} mEq/L</div></div>`;
+      html += `<div class="math-block">HTS rate = Total flow × (Target Na − Circuit Na) / (513 − Target Na)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${totalFlow} × (${targetNa} − ${circuitNa.toFixed(1)}) / (513 − ${targetNa})<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${totalFlow} × ${(targetNa - circuitNa).toFixed(1)} / ${(513 - targetNa).toFixed(1)}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="highlight">${htsRate.toFixed(1)} mL/hr</span></div>`;
+    } else {
+      html += `<div class="result-box success"><div class="result-label" style="color:var(--green);">No HTS Needed</div><div class="result-value" style="color:var(--green);">Circuit Na⁺ ≥ Target</div><div class="result-note" style="color:var(--text-secondary);">Effective circuit sodium (${circuitNa.toFixed(1)}) already meets or exceeds target (${targetNa}).</div></div>`;
+    }
+  } else if (scenario === 'hypo') {
+    const targetNa = getVal('targetNa');
+    const currentNa = getVal('currentNa');
+    if (targetNa === 0) { showError('Enter a target sodium.'); return; }
+    if (circuitNa > targetNa) {
+      const d5wRate = totalFlow * (circuitNa - targetNa) / targetNa;
+      html += `<div class="result-box success"><div class="result-label" style="color:var(--green);">D5W Required</div><div class="result-value" style="color:var(--green);">${d5wRate.toFixed(0)} <span class="unit-small">mL/hr</span></div><div class="result-note" style="color:var(--text-secondary);">To achieve equilibration target of ${targetNa} mEq/L</div></div>`;
+      html += `<div class="math-block">D5W rate = Total flow × (Circuit Na − Target Na) / Target Na<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${totalFlow} × (${circuitNa.toFixed(1)} − ${targetNa}) / ${targetNa}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${totalFlow} × ${(circuitNa - targetNa).toFixed(1)} / ${targetNa}<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="highlight">${d5wRate.toFixed(0)} mL/hr</span></div>`;
+      if (currentNa > 0) {
+        const correction = targetNa - currentNa;
+        let warnClass = 'warning', warnText = '';
+        if (Math.abs(correction) > 10) { warnText = `Predicted correction of ${correction.toFixed(1)} mEq/L exceeds recommended 8–10 mEq/24h. Consider a lower target or higher D5W rate.`; }
+        else if (Math.abs(correction) > 8) { warnText = `Predicted correction of ${correction.toFixed(1)} mEq/L is near the upper limit. Monitor serum Na⁺ frequently.`; }
+        else { warnClass = 'success'; warnText = `Predicted correction of ${correction.toFixed(1)} mEq/L is within safe range. Continue frequent monitoring.`; }
+        html += `<div class="result-box ${warnClass}"><div class="result-note" style="color:var(--text-secondary);"><strong>Correction check:</strong> ${warnText}</div></div>`;
+      }
+    } else {
+      html += `<div class="result-box success"><div class="result-label" style="color:var(--green);">No D5W Needed</div><div class="result-value" style="color:var(--green);">Circuit Na⁺ ≤ Target</div><div class="result-note" style="color:var(--text-secondary);">Effective circuit sodium (${circuitNa.toFixed(1)}) is at or below target (${targetNa}).</div></div>`;
+    }
+  }
+  html += `<div class="result-box warning" style="margin-top:12px;"><div class="result-note" style="color:var(--text-secondary);"><strong style="color:var(--amber);">Note:</strong> Assumes Na⁺ sieving coefficient = 1.0. Gibbs-Donnan effect reduces actual clearance by ~2–5% in hypoalbuminemic patients. Monitor serum Na⁺ every 2–4 hours.</div></div>`;
+  document.getElementById('results').innerHTML = html;
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showError(msg) {
+  document.getElementById('results').innerHTML = `<div class="result-box danger"><div class="result-note" style="color:var(--red);"><strong>Missing input:</strong> ${msg}</div></div>`;
+}
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach((n, i) => {
+    n.classList.toggle('active', (page === 'calc' && i === 0) || (page === 'formulas' && i === 1) || (page === 'refs' && i === 2));
+  });
+  window.scrollTo(0, 0);
+}
+
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+</script>
+</body>
+</html>
