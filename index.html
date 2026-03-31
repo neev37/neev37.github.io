@@ -402,7 +402,7 @@
   <!-- CRRT Prescription -->
   <div class="card">
     <div class="card-title">
-      <div class="icon" style="background:var(--green-bg);color:var(--green);">⚙</div>
+      <div class="icon" style="background:var(--green-bg);color:var(--green);">Rx</div>
       CRRT Prescription
     </div>
     <div class="field">
@@ -431,24 +431,55 @@
         <input type="number" id="citrateNa" value="224" inputmode="decimal">
       </div>
     </div>
-    <div class="row" id="rf-row">
-      <div class="field">
-        <label>Replacement fluid <span class="unit">mL/hr</span></label>
-        <input type="number" id="rfRate" placeholder="1000" inputmode="decimal">
-      </div>
-      <div class="field">
-        <label>RF [Na⁺] <span class="unit">mEq/L</span></label>
-        <input type="number" id="rfNa" value="140" inputmode="decimal">
+    <div class="field">
+      <label>Dose Entry</label>
+      <div class="segment" id="dose-mode-seg">
+        <button class="active" onclick="setDoseMode('total')">Total Dose</button>
+        <button onclick="setDoseMode('individual')">Individual Rates</button>
       </div>
     </div>
-    <div class="row" id="dial-row">
-      <div class="field">
-        <label>Dialysate <span class="unit">mL/hr</span></label>
-        <input type="number" id="dialRate" placeholder="1000" inputmode="decimal">
+    <div id="total-dose-section">
+      <div class="row">
+        <div class="field">
+          <label>Total effluent dose <span class="unit">L/hr</span></label>
+          <input type="number" id="totalDose" placeholder="2" inputmode="decimal" step="0.1">
+        </div>
+        <div class="field">
+          <label>Fluid [Na⁺] <span class="unit">mEq/L</span></label>
+          <input type="number" id="totalDoseNa" value="140" inputmode="decimal">
+        </div>
       </div>
-      <div class="field">
-        <label>Dialysate [Na⁺] <span class="unit">mEq/L</span></label>
-        <input type="number" id="dialNa" value="140" inputmode="decimal">
+    </div>
+    <div id="individual-rates-section" style="display:none;">
+      <div class="row" id="pre-rf-row">
+        <div class="field">
+          <label>Pre-replacement <span class="unit">mL/hr</span></label>
+          <input type="number" id="preRfRate" placeholder="500" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Pre-RF [Na⁺] <span class="unit">mEq/L</span></label>
+          <input type="number" id="preRfNa" value="140" inputmode="decimal">
+        </div>
+      </div>
+      <div class="row" id="dial-row">
+        <div class="field">
+          <label>Dialysate <span class="unit">mL/hr</span></label>
+          <input type="number" id="dialRate" placeholder="1000" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Dialysate [Na⁺] <span class="unit">mEq/L</span></label>
+          <input type="number" id="dialNa" value="140" inputmode="decimal">
+        </div>
+      </div>
+      <div class="row" id="post-rf-row">
+        <div class="field">
+          <label>Post-replacement <span class="unit">mL/hr</span></label>
+          <input type="number" id="postRfRate" placeholder="500" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Post-RF [Na⁺] <span class="unit">mEq/L</span></label>
+          <input type="number" id="postRfNa" value="140" inputmode="decimal">
+        </div>
       </div>
     </div>
   </div>
@@ -624,24 +655,44 @@
 let scenario = 'hyper';
 let anticoag = 'acda';
 let crrtMode = 'cvvhdf';
+let doseMode = 'total';
+
+function setDoseMode(mode) {
+  doseMode = mode;
+  document.querySelectorAll('#dose-mode-seg button').forEach((b, i) => {
+    b.classList.toggle('active', (mode === 'total' && i === 0) || (mode === 'individual' && i === 1));
+  });
+  document.getElementById('total-dose-section').style.display = mode === 'total' ? 'block' : 'none';
+  document.getElementById('individual-rates-section').style.display = mode === 'individual' ? 'block' : 'none';
+  if (mode === 'individual') updateIndividualVisibility();
+  document.getElementById('results').innerHTML = '';
+}
+
+function updateIndividualVisibility() {
+  const preRow = document.getElementById('pre-rf-row');
+  const dialRow = document.getElementById('dial-row');
+  const postRow = document.getElementById('post-rf-row');
+  if (crrtMode === 'cvvhdf') {
+    preRow.style.display = 'flex';
+    dialRow.style.display = 'flex';
+    postRow.style.display = 'flex';
+  } else if (crrtMode === 'cvvh') {
+    preRow.style.display = 'flex';
+    dialRow.style.display = 'none';
+    postRow.style.display = 'flex';
+  } else if (crrtMode === 'cvvhd') {
+    preRow.style.display = 'none';
+    dialRow.style.display = 'flex';
+    postRow.style.display = 'none';
+  }
+}
 
 function setCrrtMode(mode) {
   crrtMode = mode;
   document.querySelectorAll('#mode-seg button').forEach((b, i) => {
     b.classList.toggle('active', (mode === 'cvvhdf' && i === 0) || (mode === 'cvvh' && i === 1) || (mode === 'cvvhd' && i === 2));
   });
-  const rfRow = document.getElementById('rf-row');
-  const dialRow = document.getElementById('dial-row');
-  if (mode === 'cvvhdf') {
-    rfRow.style.display = 'flex';
-    dialRow.style.display = 'flex';
-  } else if (mode === 'cvvh') {
-    rfRow.style.display = 'flex';
-    dialRow.style.display = 'none';
-  } else if (mode === 'cvvhd') {
-    rfRow.style.display = 'none';
-    dialRow.style.display = 'flex';
-  }
+  if (doseMode === 'individual') updateIndividualVisibility();
   document.getElementById('results').innerHTML = '';
 }
 
@@ -683,20 +734,47 @@ function setAnticoag(a) {
 function getVal(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
 
 function calculate() {
-  const rfRate = crrtMode !== 'cvvhd' ? getVal('rfRate') : 0;
-  const rfNa = crrtMode !== 'cvvhd' ? getVal('rfNa') : 0;
-  const dialRate = crrtMode !== 'cvvh' ? getVal('dialRate') : 0;
-  const dialNa = crrtMode !== 'cvvh' ? getVal('dialNa') : 0;
+  let preRfRate = 0, preRfNa = 0, postRfRate = 0, postRfNa = 0, dialRate = 0, dialNa = 0;
   const citrateRate = anticoag !== 'none' ? getVal('citrateRate') : 0;
   const citrateNa = anticoag !== 'none' ? getVal('citrateNa') : 0;
-  const totalFlow = rfRate + dialRate + citrateRate;
+
+  if (doseMode === 'total') {
+    const totalDoseL = getVal('totalDose');
+    const totalDoseMl = totalDoseL * 1000;
+    const fluidNa = getVal('totalDoseNa');
+    if (totalDoseMl === 0) { showError('Enter a total effluent dose.'); return; }
+    // Auto-divide evenly among visible components based on mode
+    if (crrtMode === 'cvvhdf') {
+      preRfRate = Math.round(totalDoseMl / 3);
+      dialRate = Math.round(totalDoseMl / 3);
+      postRfRate = totalDoseMl - preRfRate - dialRate;
+      preRfNa = fluidNa; dialNa = fluidNa; postRfNa = fluidNa;
+    } else if (crrtMode === 'cvvh') {
+      preRfRate = Math.round(totalDoseMl / 2);
+      postRfRate = totalDoseMl - preRfRate;
+      preRfNa = fluidNa; postRfNa = fluidNa;
+    } else if (crrtMode === 'cvvhd') {
+      dialRate = totalDoseMl;
+      dialNa = fluidNa;
+    }
+  } else {
+    preRfRate = crrtMode !== 'cvvhd' ? getVal('preRfRate') : 0;
+    preRfNa = crrtMode !== 'cvvhd' ? getVal('preRfNa') : 0;
+    postRfRate = crrtMode !== 'cvvhd' ? getVal('postRfRate') : 0;
+    postRfNa = crrtMode !== 'cvvhd' ? getVal('postRfNa') : 0;
+    dialRate = crrtMode !== 'cvvh' ? getVal('dialRate') : 0;
+    dialNa = crrtMode !== 'cvvh' ? getVal('dialNa') : 0;
+  }
+
+  const totalFlow = preRfRate + postRfRate + dialRate + citrateRate;
   if (totalFlow === 0) { showError('Enter at least one fluid flow rate.'); return; }
-  const totalNa = (rfRate * rfNa) + (dialRate * dialNa) + (citrateRate * citrateNa);
+  const totalNa = (preRfRate * preRfNa) + (postRfRate * postRfNa) + (dialRate * dialNa) + (citrateRate * citrateNa);
   const circuitNa = totalNa / totalFlow;
   let html = '';
   html += `<div class="result-box neutral"><div class="result-label" style="color:var(--accent);">Effective Circuit Na⁺</div><div class="result-value" style="color:var(--accent);">${circuitNa.toFixed(1)} <span class="unit-small">mEq/L</span></div><div class="result-note" style="color:var(--text-secondary);">Patient sodium will drift toward this value at steady state</div></div>`;
   let mathLines = [];
-  if (rfRate > 0) mathLines.push(`RF: ${rfRate} × ${rfNa} = ${(rfRate * rfNa).toLocaleString()}`);
+  if (preRfRate > 0) mathLines.push(`Pre-RF: ${preRfRate} × ${preRfNa} = ${(preRfRate * preRfNa).toLocaleString()}`);
+  if (postRfRate > 0) mathLines.push(`Post-RF: ${postRfRate} × ${postRfNa} = ${(postRfRate * postRfNa).toLocaleString()}`);
   if (dialRate > 0) mathLines.push(`Dial: ${dialRate} × ${dialNa} = ${(dialRate * dialNa).toLocaleString()}`);
   if (citrateRate > 0) mathLines.push(`Citrate: ${citrateRate} × ${citrateNa} = ${(citrateRate * citrateNa).toLocaleString()}`);
   mathLines.push(`─────────────────────`);
