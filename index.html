@@ -113,6 +113,7 @@
     justify-content: center;
     font-size: 14px;
     font-weight: 700;
+    text-transform: none;
   }
 
   /* ── Form elements ── */
@@ -405,6 +406,14 @@
       CRRT Prescription
     </div>
     <div class="field">
+      <label>Mode</label>
+      <div class="segment" id="mode-seg">
+        <button class="active" onclick="setCrrtMode('cvvhdf')">CVVHDF</button>
+        <button onclick="setCrrtMode('cvvh')">CVVH</button>
+        <button onclick="setCrrtMode('cvvhd')">CVVHD</button>
+      </div>
+    </div>
+    <div class="field">
       <label>Anticoagulation</label>
       <div class="segment" id="anticoag-seg">
         <button class="active" onclick="setAnticoag('acda')">ACD-A</button>
@@ -422,7 +431,7 @@
         <input type="number" id="citrateNa" value="224" inputmode="decimal">
       </div>
     </div>
-    <div class="row">
+    <div class="row" id="rf-row">
       <div class="field">
         <label>Replacement fluid <span class="unit">mL/hr</span></label>
         <input type="number" id="rfRate" placeholder="1000" inputmode="decimal">
@@ -432,7 +441,7 @@
         <input type="number" id="rfNa" value="140" inputmode="decimal">
       </div>
     </div>
-    <div class="row">
+    <div class="row" id="dial-row">
       <div class="field">
         <label>Dialysate <span class="unit">mL/hr</span></label>
         <input type="number" id="dialRate" placeholder="1000" inputmode="decimal">
@@ -614,6 +623,27 @@
 <script>
 let scenario = 'hyper';
 let anticoag = 'acda';
+let crrtMode = 'cvvhdf';
+
+function setCrrtMode(mode) {
+  crrtMode = mode;
+  document.querySelectorAll('#mode-seg button').forEach((b, i) => {
+    b.classList.toggle('active', (mode === 'cvvhdf' && i === 0) || (mode === 'cvvh' && i === 1) || (mode === 'cvvhd' && i === 2));
+  });
+  const rfRow = document.getElementById('rf-row');
+  const dialRow = document.getElementById('dial-row');
+  if (mode === 'cvvhdf') {
+    rfRow.style.display = 'flex';
+    dialRow.style.display = 'flex';
+  } else if (mode === 'cvvh') {
+    rfRow.style.display = 'flex';
+    dialRow.style.display = 'none';
+  } else if (mode === 'cvvhd') {
+    rfRow.style.display = 'none';
+    dialRow.style.display = 'flex';
+  }
+  document.getElementById('results').innerHTML = '';
+}
 
 function setScenario(s) {
   scenario = s;
@@ -653,8 +683,10 @@ function setAnticoag(a) {
 function getVal(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
 
 function calculate() {
-  const rfRate = getVal('rfRate'), rfNa = getVal('rfNa');
-  const dialRate = getVal('dialRate'), dialNa = getVal('dialNa');
+  const rfRate = crrtMode !== 'cvvhd' ? getVal('rfRate') : 0;
+  const rfNa = crrtMode !== 'cvvhd' ? getVal('rfNa') : 0;
+  const dialRate = crrtMode !== 'cvvh' ? getVal('dialRate') : 0;
+  const dialNa = crrtMode !== 'cvvh' ? getVal('dialNa') : 0;
   const citrateRate = anticoag !== 'none' ? getVal('citrateRate') : 0;
   const citrateNa = anticoag !== 'none' ? getVal('citrateNa') : 0;
   const totalFlow = rfRate + dialRate + citrateRate;
